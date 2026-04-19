@@ -1,5 +1,22 @@
 # React + TypeScript + Vite
 
+## Docker note
+
+When this app runs in Docker, Vite may print `http://localhost:5173/` in the container logs.
+That `localhost` is the container itself, not your Mac host.
+
+If you want to open the app from your browser on the host machine, publish the port explicitly:
+
+```bash
+docker run --rm -p 5173:5173 tutorial
+```
+
+If you run this instead, the container still starts Vite, but the host cannot reach it:
+
+```bash
+docker run tutorial
+```
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
