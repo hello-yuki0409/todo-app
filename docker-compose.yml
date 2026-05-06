@@ -2,6 +2,7 @@ version: "3.8"
 services:
   client:
     build: .
+    container_name: my-container
     ports:
       - "5173:5173"
     depends_on:
@@ -12,8 +13,46 @@ services:
 
   api:
     build: ./todo-api
+    container_name: api
     ports:
       - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/todo
+    depends_on:
+      - db
     volumes:
       - ./todo-api:/app
       - /app/node_modules
+
+  # dbというサービス名
+  db:
+    # 使う Docker イメージを指定
+    image: postgres:18-alpine
+    # 作られるコンテナ名を db に固定している
+    # 省略すると Compose が自動で名前を付ける
+    container_name: db
+    # コンテナに渡す環境変数のまとまり
+    # Postgres の初期設定に使われる
+    environment:
+      # PostgreSQL の初期ユーザー名を postgres にしている
+      - POSTGRES_USER=postgres
+      # そのユーザーのパスワードを postgres にしている
+      - POSTGRES_PASSWORD=postgres
+      # 起動時に作る初期データベース名を todo にしている
+      - POSTGRES_DB=todo
+    # ホストPCとコンテナのポートをつなぐ設定
+    ports:
+      # 左の 5432 が Mac 側、右の 5432 がコンテナ側
+      # つまり Mac から localhost:5432 で PostgreSQL に接続できるようになる
+      - "5432:5432"
+    # コンテナのデータを永続化する設定
+    volumes:
+      # db-data という Docker volume をコンテナ内の /var/lib/postgresql/data にマウント
+      # PostgreSQL の実データはこのディレクトリに保存されるので、コンテナを作り直してもデータが残る
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  # db-data という名前の volume を使います、という宣言
+  db-data:
+    # 最後の `volumes:` は、サービスで使用している `db-data` という名前付きボリュームを Compose 全体で定義している。
+    # これによって Docker がそのボリュームを作成・管理できる。

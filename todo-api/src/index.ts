@@ -1,12 +1,17 @@
 import { serve } from "@hono/node-server";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { PrismaClient } from "./generated/prisma/client.js";
 
-interface Todo {
-  id: number;
-  title: string;
-  completed: boolean;
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set");
 }
+
+const adapter = new PrismaPg({ connectionString });
+const prisma = new PrismaClient({ adapter });
 
 const app = new Hono();
 
@@ -16,43 +21,44 @@ app.use(
   }),
 );
 
-const todos: Todo[] = [];
-
 app.get("/", (c) => {
   return c.text("Hello Hono!");
 });
 
-app.get("/todos", (c) => {
+app.get("/todos", async (c) => {
+  const todos = await prisma.todo.findMany();
   return c.json({ todos });
 });
 
 app.post("/todos", async (c) => {
   const { title } = await c.req.json();
-  const todo = {
-    id: todos.length + 1,
-    title,
-    completed: false,
-  };
-  todos.push(todo);
+  const todo = await prisma.todo.create({
+    data: {
+      title,
+      completed: false,
+    },
+  });
   return c.json({ todo });
 });
 
 app.put("/todos/:id", async (c) => {
   const { id } = c.req.param();
   const { completed } = await c.req.json();
-  const todo = todos.find((todo) => todo.id === Number(id));
-
-  if (!todo) {
+  try {
+    const todo = await prisma.todo.update({
+      where: { id: Number(id) },
+      data: { completed },
+    });
+    return c.json({ todo });
+  } catch {
     return c.notFound();
   }
-
-  todo.completed = completed;
-  return c.json({ todos });
 });
 
 serve(
   {
     fetch: app.fetch,
+    hostname: "0.0.0.0",
     port: 3000,
   },
   (info) => {

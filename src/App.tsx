@@ -9,6 +9,9 @@ type Todo = {
 function App() {
   async function fetchTodos() {
     const response = await fetch("http://localhost:3000/todos");
+    if (!response.ok) {
+      throw new Error("Failed to fetch todos");
+    }
     const data = await response.json();
     setTodos(data.todos as Todo[]);
   }
@@ -20,26 +23,48 @@ function App() {
   }, []);
 
   const handleAddTodo = async () => {
+    if (!title.trim()) {
+      return;
+    }
+
     const response = await fetch("http://localhost:3000/todos", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ title }),
+      body: JSON.stringify({ title: title.trim() }),
     });
+
+    if (!response.ok) {
+      throw new Error("Failed to add todo");
+    }
 
     const data = await response.json();
     const todo = data.todo as Todo;
 
     setTodos([...todos, todo]);
+    setTitle("");
   };
 
-  const handleToggleTodo = (id: number) => {
-    setTodos(
-      todos.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo,
-      ),
-    );
+  const handleToggleTodo = async (id: number) => {
+    const response = await fetch(`http://localhost:3000/todos/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        completed: !todos.find((todo) => todo.id === id)?.completed,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to update todo");
+    }
+
+    const data = await response.json();
+    const updatedTodo = data.todo as Todo;
+
+    setTodos(todos.map((todo) => (todo.id === id ? updatedTodo : todo)));
   };
 
   return (
