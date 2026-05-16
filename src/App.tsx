@@ -48,7 +48,7 @@ function App() {
 
   const handleToggleTodo = async (id: number) => {
     const response = await fetch(`http://localhost:3000/todos/${id}`, {
-      method: "PUT",
+      method: "PATCH",
       headers: {
         "Content-Type": "application/json",
       },
@@ -65,6 +65,18 @@ function App() {
     const updatedTodo = data.todo as Todo;
 
     setTodos(todos.map((todo) => (todo.id === id ? updatedTodo : todo)));
+  };
+
+  const handleDeleteTodo = async (id: number) => {
+    const response = await fetch(`http://localhost:3000/todos/${id}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to delete todo");
+    }
+
+    setTodos(todos.filter((todo) => todo.id !== id));
   };
 
   return (
@@ -124,6 +136,14 @@ function App() {
                   >
                     {todo.title}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteTodo(todo.id)}
+                    aria-label={`${todo.title}を削除`}
+                    className="px-3 py-1 text-sm text-red-600 border border-red-200 rounded hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200"
+                  >
+                    削除
+                  </button>
                 </li>
               ))}
             </ul>

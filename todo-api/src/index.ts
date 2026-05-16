@@ -38,10 +38,10 @@ app.post("/todos", async (c) => {
       completed: false,
     },
   });
-  return c.json({ todo });
+  return c.json({ todo }, 201);
 });
 
-app.put("/todos/:id", async (c) => {
+app.patch("/todos/:id", async (c) => {
   const { id } = c.req.param();
   const { completed } = await c.req.json();
   try {
@@ -51,7 +51,19 @@ app.put("/todos/:id", async (c) => {
     });
     return c.json({ todo });
   } catch {
-    return c.notFound();
+    return c.json({ error: "Todo not found" }, 404);
+  }
+});
+
+app.delete("/todos/:id", async (c) => {
+  const { id } = c.req.param();
+  try {
+    await prisma.todo.delete({
+      where: { id: Number(id) },
+    });
+    return c.body(null, 204);
+  } catch {
+    return c.json({ error: "Todo not found" }, 404);
   }
 });
 
